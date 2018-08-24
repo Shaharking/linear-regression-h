@@ -62,9 +62,9 @@ def main():
 
     results = np.dot(cv_data, theta)
     indexs = np.argmax(results, axis=1).reshape((len(cv_labels), 1))
-    total_errors = np.sum(indexs == cv_labels)
-    percentage = (total_errors / (1. * len(cv_labels)))
-    print 'Total error %d from %d (Success Rate of - %f percentage)'%(total_errors, len(cv_labels), percentage*100)
+    total_success = np.sum(indexs == cv_labels)
+    percentage = (total_success / (1. * len(cv_labels)))
+    print 'Total Successes %d from %d (Success Rate of - %f percentage)'%(total_success, len(cv_labels), percentage*100)
 
 
 

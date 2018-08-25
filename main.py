@@ -13,6 +13,7 @@ def load_data(path, lines_to_take = 5000):
 
     data = df[:, 1:]
     data = normalize_data(data)
+    # We added bias to the data, we should not include column 0 when redisplay the images.
     data = np.c_[np.ones(labels.shape[0]), data]
     return labels, data
 
@@ -50,28 +51,20 @@ def main():
             temp_theta = temp_theta - (alpha*gradients)
             #print 'Iter %d with Cost %f for digit %d' % (i, loss, digit)
 
+        # Calculate Errors on cross validation - useful for taking the best alpha and gama
+        #    current_labels = np.array(1 * (cv_labels == digit))
+        #    calculated_theta = temp_theta.reshape((len(temp_theta), 1))
+        #    loss, gradients = costFunction.linear_regression_loss_function(calculated_theta, cv_data, current_labels, 0.)
+        #    print 'Cost %f for digit %d on CROSS VALIDATION' %(loss, digit)
+
         print 'Cost %f for digit %d' % (loss, digit)
         theta[:, digit] = temp_theta.reshape((len(temp_theta)))
-
-    # Calculate Errors on cross validation - useful for taking the best alpha and gama
-    #for digit in range(10):
-    #    current_labels = np.array(1 * (cv_labels == digit))
-    #    calculated_theta = theta[:, digit].reshape((len(temp_theta), 1))
-    #    loss, gradients = costFunction.linear_regression_loss_function(calculated_theta, cv_data, current_labels, 0.)
-    #   print 'Cost %f for digit %d on CROSS VALIDATION' %(loss, digit)
 
     results = np.dot(cv_data, theta)
     indexs = np.argmax(results, axis=1).reshape((len(cv_labels), 1))
     total_success = np.sum(indexs == cv_labels)
     percentage = (total_success / (1. * len(cv_labels)))
     print 'Total Successes %d from %d (Success Rate of - %f percentage)'%(total_success, len(cv_labels), percentage*100)
-
-
-
-
-
-
-
 
 
 

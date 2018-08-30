@@ -1,9 +1,12 @@
 import pandas as pd
 import numpy as np
 import costFunction
+import itertools
+import os.path
 
 def normalize_data(data):
     #return (data - np.mean(data, axis=0)) / np.std(data, axis=0)
+    # mean normalization
     return (data - np.mean(data, axis=0)) / 255.
 
 def load_data(path, lines_to_take = 5000):
@@ -32,39 +35,63 @@ def sperate_data_to_train_and_cv(data, labels):
 def main():
     train_path = './Data/mnist_train.csv'
     test_path = './Data/mnist_test.csv'
+    matrix_path = 'matrix.txt'
 
     labels, data = load_data(train_path)
     train_data, train_labels, cv_data, cv_labels = sperate_data_to_train_and_cv(data, labels)
 
     num_of_iterations = 400
-
+    skip_training = False
     # we initial theta to be zeros.
     # theta = np.random.rand(train_data.shape[1], 1)
     theta = np.zeros((train_data.shape[1], 10))
-    alpha = 3.6
+    # alpha = 3.6
 
-    for digit in range(10):
-        current_labels = np.array(1 * (train_labels == digit))
-        temp_theta = np.zeros((train_data.shape[1], 1))
-        for i in range(num_of_iterations):
-            loss, gradients = costFunction.linear_regression_loss_function(temp_theta, train_data, current_labels, 0.1)
-            temp_theta = temp_theta - (alpha*gradients)
-            #print 'Iter %d with Cost %f for digit %d' % (i, loss, digit)
+    if os.path.exists(matrix_path):
+        theta = np.loadtxt(matrix_path)
+        skip_training = True
 
-        # Calculate Errors on cross validation - useful for taking the best alpha and gama
-        #    current_labels = np.array(1 * (cv_labels == digit))
-        #    calculated_theta = temp_theta.reshape((len(temp_theta), 1))
-        #    loss, gradients = costFunction.linear_regression_loss_function(calculated_theta, cv_data, current_labels, 0.)
-        #    print 'Cost %f for digit %d on CROSS VALIDATION' %(loss, digit)
+    alhpas = [0.03, 0.09, 0.3, 0.9, 3.0, 6.0]
+    lamdas = [0.03, 0.09, 0.3, 0.9, 3.0, 6.0]
 
-        print 'Cost %f for digit %d' % (loss, digit)
-        theta[:, digit] = temp_theta.reshape((len(temp_theta)))
+    alhpas_lamdas = [i for i in itertools.product(alhpas, lamdas)]
 
-    results = np.dot(cv_data, theta)
-    indexs = np.argmax(results, axis=1).reshape((len(cv_labels), 1))
-    total_success = np.sum(indexs == cv_labels)
-    percentage = (total_success / (1. * len(cv_labels)))
-    print 'Total Successes %d from %d (Success Rate of - %f percentage)'%(total_success, len(cv_labels), percentage*100)
+    if not skip_training:
+
+        for digit in range(10):
+            current_labels = np.array(1 * (train_labels == digit))
+            cvs_labels = np.array(1 * (cv_labels == digit))
+            best_theta = np.zeros((train_data.shape[1], 1))
+            min_loss = 100.0
+            for (alpha, lamda) in alhpas_lamdas:
+                temp_theta = np.zeros((train_data.shape[1], 1))
+                for i in range(num_of_iterations):
+                    loss, gradients = costFunction.linear_regression_loss_function(temp_theta, train_data, current_labels, lamda)
+                    temp_theta = temp_theta - (alpha*gradients)
+
+                    if loss > 1.2:
+                        break
+                    #print 'Iter %d with Cost %f for digit %d' % (i, loss, digit)
+
+                # Calculate Errors on cross validation - useful for taking the best alpha and gama
+                calculated_theta = temp_theta.reshape((len(temp_theta), 1))
+                loss, gradients = costFunction.linear_regression_loss_function(calculated_theta, cv_data, cvs_labels, 0.)
+
+                if loss < min_loss:
+                    min_loss = loss
+                    best_theta = temp_theta
+
+                print 'Cost %f for digit %d on CROSS VALIDATION' %(loss, digit)
+
+            print 'Cost %f for digit %d' % (loss, digit)
+            theta[:, digit] = best_theta.reshape((len(best_theta)))
+
+        np.savetxt('matrix.txt', theta)
+        results = np.dot(cv_data, theta)
+        indexs = np.argmax(results, axis=1).reshape((len(cv_labels), 1))
+        total_success = np.sum(indexs == cv_labels)
+        percentage = (total_success / (1. * len(cv_labels)))
+        print 'Total Successes %d from %d (Success Rate of - %f percentage)'%(total_success, len(cv_labels), percentage*100)
 
 
 
